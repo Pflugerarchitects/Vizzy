@@ -1,0 +1,42 @@
+# Apache Configuration for Vizzy Backend
+
+# Enable RewriteEngine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Don't rewrite for existing files or directories
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+</IfModule>
+
+# Security: Prevent access to config.php
+<Files "config.php">
+    Require all denied
+</Files>
+
+# Security: Prevent directory listing
+Options -Indexes
+
+# Enable CORS (adjust as needed for production)
+<IfModule mod_headers.c>
+    # Development - allow localhost
+    Header set Access-Control-Allow-Origin "http://localhost:5175"
+
+    # Production - uncomment and update your domain
+    # Header set Access-Control-Allow-Origin "https://yourdomain.com"
+
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+    Header set Access-Control-Allow-Credentials "true"
+</IfModule>
+
+# File Upload Settings
+php_value upload_max_filesize 20M
+php_value post_max_size 25M
+php_value max_execution_time 300
+php_value max_input_time 300
+
+# Error handling
+php_flag display_errors On
+php_flag display_startup_errors On
+php_value error_reporting E_ALL

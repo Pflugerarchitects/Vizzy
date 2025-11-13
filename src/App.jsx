@@ -4,7 +4,7 @@ import ImageUpload from './components/ImageUpload';
 import ImageGallery from './components/ImageGallery';
 import ThemeToggle from './components/ThemeToggle';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
-import { saveProjects, loadProjects, saveActiveProjectId, loadActiveProjectId } from './utils/storage';
+import { projectsAPI, imagesAPI } from './utils/api';
 
 function App() {
   const [projects, setProjects] = useState([]);
@@ -12,63 +12,71 @@ function App() {
   const [projectToDelete, setProjectToDelete] = useState(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  // Load projects from localStorage on mount
+  // Load projects from API on mount
   useEffect(() => {
-    const savedProjects = loadProjects();
-    const savedActiveId = loadActiveProjectId();
-
-    if (savedProjects.length === 0) {
-      // Create default project if none exist
-      const defaultProject = {
-        id: Date.now().toString(),
-        name: 'My First Project',
-        createdDate: new Date().toISOString(),
-        images: []
-      };
-      setProjects([defaultProject]);
-      setActiveProjectId(defaultProject.id);
-      saveProjects([defaultProject]);
-      saveActiveProjectId(defaultProject.id);
-    } else {
-      setProjects(savedProjects);
-      // Set active project to saved one, or first project if saved ID doesn't exist
-      const validActiveId = savedActiveId && savedProjects.find(p => p.id === savedActiveId)
-        ? savedActiveId
-        : savedProjects[0].id;
-      setActiveProjectId(validActiveId);
-    }
+    loadProjectsFromAPI();
   }, []);
 
-  // Save projects to localStorage whenever they change
-  useEffect(() => {
-    if (projects.length > 0) {
-      saveProjects(projects);
-    }
-  }, [projects]);
-
-  // Save active project ID whenever it changes
+  // Load active project images when active project changes
   useEffect(() => {
     if (activeProjectId) {
-      saveActiveProjectId(activeProjectId);
+      loadProjectImages(activeProjectId);
+      // Save to localStorage for persistence across sessions
+      localStorage.setItem('activeProjectId', activeProjectId);
     }
   }, [activeProjectId]);
 
-  const handleCreateProject = (projectName) => {
-    const newProject = {
-      id: Date.now().toString(),
-      name: projectName,
-      createdDate: new Date().toISOString(),
-      images: []
-    };
-    setProjects(prev => [...prev, newProject]);
-    setActiveProjectId(newProject.id);
+  const loadProjectsFromAPI = async () => {
+    try {
+      const projectsData = await projectsAPI.getAll();
+      setProjects(projectsData);
+
+      // Restore active project from localStorage or use first project
+      const savedActiveId = localStorage.getItem('activeProjectId');
+      const validActiveId = savedActiveId && projectsData.find(p => p.id == savedActiveId)
+        ? savedActiveId
+        : (projectsData[0]?.id || null);
+
+      setActiveProjectId(validActiveId);
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+      alert('Failed to load projects. Please check your connection.');
+    }
+  };
+
+  const loadProjectImages = async (projectId) => {
+    try {
+      const imagesData = await imagesAPI.getByProject(projectId);
+
+      // Update the project with its images
+      setProjects(prev =>
+        prev.map(project =>
+          project.id == projectId
+            ? { ...project, images: imagesData }
+            : project
+        )
+      );
+    } catch (error) {
+      console.error('Failed to load images:', error);
+    }
+  };
+
+  const handleCreateProject = async (projectName) => {
+    try {
+      const newProject = await projectsAPI.create(projectName);
+      setProjects(prev => [...prev, { ...newProject, images: [] }]);
+      setActiveProjectId(newProject.id);
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      alert('Failed to create project. Please try again.');
+    }
   };
 
   const handleSelectProject = (projectId) => {
     setActiveProjectId(projectId);
   };
 
-  const handleRenameProject = (projectId, newName) => {
+  const handleRenameProject = async (projectId, newName) => {
     // Trim and validate the new name
     const trimmedName = newName.trim();
     if (!trimmedName) {
@@ -76,15 +84,23 @@ function App() {
       return false;
     }
 
-    // Update the project name
-    setProjects(prev =>
-      prev.map(project =>
-        project.id === projectId
-          ? { ...project, name: trimmedName }
-          : project
-      )
-    );
-    return true;
+    try {
+      await projectsAPI.update(projectId, { name: trimmedName });
+
+      // Update the project name in state
+      setProjects(prev =>
+        prev.map(project =>
+          project.id === projectId
+            ? { ...project, name: trimmedName }
+            : project
+        )
+      );
+      return true;
+    } catch (error) {
+      console.error('Failed to rename project:', error);
+      alert('Failed to rename project. Please try again.');
+      return false;
+    }
   };
 
   const handleDeleteProject = (projectId) => {
@@ -99,20 +115,28 @@ function App() {
     setProjectToDelete(project);
   };
 
-  const confirmDeleteProject = () => {
+  const confirmDeleteProject = async () => {
     if (!projectToDelete) return;
 
-    // Remove the project
-    setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+    try {
+      await projectsAPI.delete(projectToDelete.id);
 
-    // If deleting the active project, switch to another project
-    if (activeProjectId === projectToDelete.id) {
-      const remainingProjects = projects.filter(p => p.id !== projectToDelete.id);
-      setActiveProjectId(remainingProjects[0].id);
+      // Remove the project from state
+      setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
+
+      // If deleting the active project, switch to another project
+      if (activeProjectId === projectToDelete.id) {
+        const remainingProjects = projects.filter(p => p.id !== projectToDelete.id);
+        setActiveProjectId(remainingProjects[0].id);
+      }
+
+      // Close the modal
+      setProjectToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      alert('Failed to delete project. Please try again.');
+      setProjectToDelete(null);
     }
-
-    // Close the modal
-    setProjectToDelete(null);
   };
 
   const cancelDeleteProject = () => {
@@ -120,27 +144,44 @@ function App() {
   };
 
   const handleImagesAdded = (newImages) => {
-    setProjects(prev =>
-      prev.map(project =>
-        project.id === activeProjectId
-          ? { ...project, images: [...project.images, ...newImages] }
-          : project
-      )
-    );
+    // Images are added via the ImageUpload component
+    // Just refresh the project images
+    if (activeProjectId) {
+      loadProjectImages(activeProjectId);
+    }
   };
 
-  const handleDeleteImage = (imageId) => {
-    setProjects(prev =>
-      prev.map(project =>
-        project.id === activeProjectId
-          ? { ...project, images: project.images.filter(img => img.id !== imageId) }
-          : project
-      )
-    );
+  const handleDeleteImage = async (imageId) => {
+    try {
+      await imagesAPI.delete(imageId);
+
+      // Remove the image from state
+      setProjects(prev =>
+        prev.map(project =>
+          project.id === activeProjectId
+            ? { ...project, images: project.images.filter(img => img.id !== imageId) }
+            : project
+        )
+      );
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+      alert('Failed to delete image. Please try again.');
+    }
   };
 
-  const handleReorderProjects = (reorderedProjects) => {
+  const handleReorderProjects = async (reorderedProjects) => {
+    // Optimistically update UI
     setProjects(reorderedProjects);
+
+    try {
+      // Send reorder request to API
+      await projectsAPI.reorder(reorderedProjects);
+    } catch (error) {
+      console.error('Failed to reorder projects:', error);
+      alert('Failed to save project order. Please refresh.');
+      // Reload projects to restore correct order
+      loadProjectsFromAPI();
+    }
   };
 
   const activeProject = projects.find(p => p.id === activeProjectId);
@@ -182,7 +223,10 @@ function App() {
 
               <section className="app-section">
                 <h3 className="app-section-title">Upload Images</h3>
-                <ImageUpload onImagesAdded={handleImagesAdded} />
+                <ImageUpload
+                  projectId={activeProjectId}
+                  onImagesAdded={handleImagesAdded}
+                />
               </section>
 
               <section className="app-section">

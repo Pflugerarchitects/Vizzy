@@ -40,3 +40,23 @@
   color: var(--accent-blue);
   font-weight: 500;
 }
+
+.image-upload.uploading {
+  cursor: wait;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.image-upload-icon.spinning {
+  animation: spin 1s linear infinite;
+  color: var(--accent-blue);
+}

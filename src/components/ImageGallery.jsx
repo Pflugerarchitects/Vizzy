@@ -1,18 +1,33 @@
 import React, { useRef } from 'react';
 import { Trash2, Download } from 'lucide-react';
 import LazyImage from './LazyImage';
+import { getImageUrl } from '../utils/api';
 
 const ImageGallery = ({ images, onDeleteImage }) => {
   const imageWindowRef = useRef(null);
 
-  const handleDownload = (e, image) => {
+  const handleDownload = async (e, image) => {
     e.stopPropagation();
-    const link = document.createElement('a');
-    link.href = image.data;
-    link.download = image.name || 'image.jpg';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const imageUrl = getImageUrl(image.file_path);
+
+    try {
+      // Fetch the image
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = image.filename || 'image.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download image. Please try again.');
+    }
   };
 
   const handleDelete = (e, imageId) => {
@@ -20,13 +35,13 @@ const ImageGallery = ({ images, onDeleteImage }) => {
     onDeleteImage(imageId);
   };
 
-  const handleImageClick = (imageData) => {
+  const handleImageClick = (imageUrl) => {
     // Check if window is already open and not closed
     if (imageWindowRef.current && !imageWindowRef.current.closed) {
       // Update existing window with new image
       const imgElement = imageWindowRef.current.document.querySelector('img');
       if (imgElement) {
-        imgElement.src = imageData;
+        imgElement.src = imageUrl;
       }
       // Bring window to front
       imageWindowRef.current.focus();
@@ -62,7 +77,7 @@ const ImageGallery = ({ images, onDeleteImage }) => {
               </style>
             </head>
             <body>
-              <img src="${imageData}" alt="Full size image" />
+              <img src="${imageUrl}" alt="Full size image" />
             </body>
           </html>
         `);
@@ -82,34 +97,37 @@ const ImageGallery = ({ images, onDeleteImage }) => {
 
   return (
     <div className="image-gallery">
-      {images.map((image) => (
-        <div
-          key={image.id}
-          className="image-gallery-item"
-          onClick={() => handleImageClick(image.data)}
-        >
-          <div className="image-gallery-item-actions">
-            <button
-              className="image-gallery-item-action"
-              onClick={(e) => handleDownload(e, image)}
-              aria-label="Download image"
-              title="Download"
-            >
-              <Download size={18} />
-            </button>
-            <button
-              className="image-gallery-item-action image-gallery-item-delete"
-              onClick={(e) => handleDelete(e, image.id)}
-              aria-label="Delete image"
-              title="Delete"
-            >
-              <Trash2 size={18} />
-            </button>
+      {images.map((image) => {
+        const imageUrl = getImageUrl(image.file_path);
+        return (
+          <div
+            key={image.id}
+            className="image-gallery-item"
+            onClick={() => handleImageClick(imageUrl)}
+          >
+            <div className="image-gallery-item-actions">
+              <button
+                className="image-gallery-item-action"
+                onClick={(e) => handleDownload(e, image)}
+                aria-label="Download image"
+                title="Download"
+              >
+                <Download size={18} />
+              </button>
+              <button
+                className="image-gallery-item-action image-gallery-item-delete"
+                onClick={(e) => handleDelete(e, image.id)}
+                aria-label="Delete image"
+                title="Delete"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+            <LazyImage src={imageUrl} alt={image.filename} />
+            <div className="image-gallery-item-name">{image.filename}</div>
           </div>
-          <LazyImage src={image.data} alt={image.name} />
-          <div className="image-gallery-item-name">{image.name}</div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
