@@ -1,0 +1,42 @@
+.image-upload {
+  border: 2px dashed var(--border-default);
+  border-radius: 16px;
+  padding: var(--spacing-2xl) var(--spacing-md);
+  text-align: center;
+  cursor: pointer;
+  background-color: var(--bg-secondary);
+  transition: all 0.2s ease;
+}
+
+.image-upload:hover {
+  border-color: var(--text-secondary);
+  background-color: var(--bg-tertiary);
+}
+
+.image-upload.drag-active {
+  border-color: var(--accent-blue);
+  background-color: var(--bg-tertiary);
+}
+
+.image-upload-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto var(--spacing-md);
+  color: var(--text-tertiary);
+}
+
+.image-upload-text {
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.image-upload-hint {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.image-upload.drag-active .image-upload-text {
+  color: var(--accent-blue);
+  font-weight: 500;
+}

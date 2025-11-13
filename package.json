@@ -1,0 +1,30 @@
+{
+  "name": "didsomeonesayblender",
+  "version": "1.0.0",
+  "description": "This is a **React-based web application** for managing and viewing architecture visualization projects.  \r The app allows the user to:\r - Create and manage multiple projects.\r - Upload and view images for each project.\r - Easily add new projects with an intuitive interface.\r - Drag and drop photos for uploading into each project.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Pflugerarchitects/DidsomeonesayBLENDER.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Pflugerarchitects/DidsomeonesayBLENDER/issues"
+  },
+  "homepage": "https://github.com/Pflugerarchitects/DidsomeonesayBLENDER#readme",
+  "dependencies": {
+    "@vitejs/plugin-react": "^5.1.0",
+    "lucide-react": "^0.553.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-dropzone": "^14.3.8",
+    "vite": "^7.2.2"
+  }
+}

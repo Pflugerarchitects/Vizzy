@@ -1,0 +1,10 @@
+/* Import theme and component styles */
+@import './styles/theme.css';
+@import './styles/App.css';
+@import './styles/Sidebar.css';
+@import './styles/ProjectList.css';
+@import './styles/NewProjectForm.css';
+@import './styles/ImageUpload.css';
+@import './styles/ImageGallery.css';
+@import './styles/ThemeToggle.css';
+@import './styles/Modal.css';
