@@ -9,7 +9,10 @@
       "WebSearch",
       "WebFetch(domain:www.apple.com)",
       "Bash(npm uninstall:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(git log:*)",
+      "Bash(rm:*)",
+      "Bash(test -f:*)"
     ],
     "deny": [],
     "ask": []

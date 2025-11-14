@@ -43,9 +43,10 @@ try {
 function handleGetProjects($db) {
     $stmt = $db->prepare("
         SELECT p.*,
-               COUNT(i.id) as image_count
-        FROM projects p
-        LEFT JOIN images i ON p.id = i.project_id
+               COUNT(i.id) as image_count,
+               COALESCE(SUM(i.file_size), 0) as total_size
+        FROM vizzy_projects p
+        LEFT JOIN vizzy_images i ON p.id = i.project_id
         GROUP BY p.id
         ORDER BY p.display_order ASC, p.created_date ASC
     ");
@@ -68,15 +69,15 @@ function handleCreateProject($db) {
     $name = trim($data['name']);
 
     // Get the highest display_order
-    $stmt = $db->prepare("SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM projects");
+    $stmt = $db->prepare("SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM vizzy_projects");
     $stmt->execute();
     $result = $stmt->fetch();
     $displayOrder = $result['next_order'];
 
     // Insert new project
     $stmt = $db->prepare("
-        INSERT INTO projects (name, display_order)
-        VALUES (:name, :display_order)
+        INSERT INTO vizzy_projects (name, display_order, created_date)
+        VALUES (:name, :display_order, NOW())
     ");
     $stmt->execute([
         'name' => $name,
@@ -86,7 +87,7 @@ function handleCreateProject($db) {
     $projectId = $db->lastInsertId();
 
     // Fetch the created project
-    $stmt = $db->prepare("SELECT * FROM projects WHERE id = :id");
+    $stmt = $db->prepare("SELECT * FROM vizzy_projects WHERE id = :id");
     $stmt->execute(['id' => $projectId]);
     $project = $stmt->fetch();
 
@@ -106,7 +107,7 @@ function handleUpdateProject($db) {
     $projectId = (int)$data['id'];
 
     // Check if project exists
-    $stmt = $db->prepare("SELECT id FROM projects WHERE id = :id");
+    $stmt = $db->prepare("SELECT id FROM vizzy_projects WHERE id = :id");
     $stmt->execute(['id' => $projectId]);
     if (!$stmt->fetch()) {
         sendError('Project not found', 404);
@@ -130,12 +131,12 @@ function handleUpdateProject($db) {
         sendError('No fields to update');
     }
 
-    $sql = "UPDATE projects SET " . implode(', ', $updates) . " WHERE id = :id";
+    $sql = "UPDATE vizzy_projects SET " . implode(', ', $updates) . " WHERE id = :id";
     $stmt = $db->prepare($sql);
     $stmt->execute($params);
 
     // Fetch updated project
-    $stmt = $db->prepare("SELECT * FROM projects WHERE id = :id");
+    $stmt = $db->prepare("SELECT * FROM vizzy_projects WHERE id = :id");
     $stmt->execute(['id' => $projectId]);
     $project = $stmt->fetch();
 
@@ -155,7 +156,7 @@ function handleDeleteProject($db) {
     $projectId = (int)$data['id'];
 
     // Check if it's the last project
-    $stmt = $db->prepare("SELECT COUNT(*) as count FROM projects");
+    $stmt = $db->prepare("SELECT COUNT(*) as count FROM vizzy_projects");
     $stmt->execute();
     $result = $stmt->fetch();
     if ($result['count'] <= 1) {
@@ -163,7 +164,7 @@ function handleDeleteProject($db) {
     }
 
     // Get all images for this project to delete files
-    $stmt = $db->prepare("SELECT file_path FROM images WHERE project_id = :project_id");
+    $stmt = $db->prepare("SELECT file_path FROM vizzy_images WHERE project_id = :project_id");
     $stmt->execute(['project_id' => $projectId]);
     $images = $stmt->fetchAll();
 
@@ -172,7 +173,7 @@ function handleDeleteProject($db) {
 
     try {
         // Delete project (CASCADE will delete images from DB)
-        $stmt = $db->prepare("DELETE FROM projects WHERE id = :id");
+        $stmt = $db->prepare("DELETE FROM vizzy_projects WHERE id = :id");
         $stmt->execute(['id' => $projectId]);
 
         if ($stmt->rowCount() === 0) {

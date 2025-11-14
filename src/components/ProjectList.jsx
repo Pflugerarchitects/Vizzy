@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Folder, Trash2 } from 'lucide-react';
+import { formatBytes } from '../utils/api';
 
 const ProjectList = ({ projects, activeProjectId, onSelectProject, onRenameProject, onDeleteProject, onReorderProjects }) => {
   const [editingProjectId, setEditingProjectId] = useState(null);
@@ -144,7 +145,10 @@ const ProjectList = ({ projects, activeProjectId, onSelectProject, onRenameProje
                 </div>
               )}
               <div className="project-item-count">
-                {project.images.length} {project.images.length === 1 ? 'image' : 'images'}
+                {(project.images || []).length} {(project.images || []).length === 1 ? 'image' : 'images'}
+                {project.total_size > 0 && (
+                  <span className="project-item-size"> • {formatBytes(project.total_size)}</span>
+                )}
               </div>
             </div>
             {!isEditing && (

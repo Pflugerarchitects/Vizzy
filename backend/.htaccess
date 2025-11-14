@@ -17,18 +17,17 @@
 # Security: Prevent directory listing
 Options -Indexes
 
-# Enable CORS (adjust as needed for production)
-<IfModule mod_headers.c>
-    # Development - allow localhost
-    Header set Access-Control-Allow-Origin "http://localhost:5175"
-
-    # Production - uncomment and update your domain
-    # Header set Access-Control-Allow-Origin "https://yourdomain.com"
-
-    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
-    Header set Access-Control-Allow-Credentials "true"
-</IfModule>
+# CORS is handled by PHP (utils.php setCORSHeaders function)
+# Commenting out .htaccess CORS to avoid duplicate headers
+#<IfModule mod_headers.c>
+#    SetEnvIf Origin "^http(s)?://(localhost:5173|localhost:5174|localhost:5175)$" origin_is=$0
+#    SetEnvIf Origin "^https://vizzy\.pflugerarchitects\.com$" origin_is=$0
+#    Header set Access-Control-Allow-Origin "%{origin_is}e" env=origin_is
+#
+#    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+#    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+#    Header set Access-Control-Allow-Credentials "true"
+#</IfModule>
 
 # File Upload Settings
 php_value upload_max_filesize 20M

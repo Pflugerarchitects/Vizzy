@@ -34,13 +34,13 @@ function handleUpload($db) {
     $projectId = (int)$_POST['project_id'];
 
     // Check if project exists
-    $stmt = $db->prepare("SELECT id FROM projects WHERE id = :id");
+    $stmt = $db->prepare("SELECT id FROM vizzy_projects WHERE id = :id");
     $stmt->execute(['id' => $projectId]);
     if (!$stmt->fetch()) {
         sendError('Project not found', 404);
     }
 
-    // Check if files were uploaded
+    // Check if files were uploaded (using 'files' key from FormData 'files[]')
     if (!isset($_FILES['files'])) {
         sendError('No files uploaded');
     }
@@ -91,7 +91,7 @@ function handleUpload($db) {
             // Get next display order
             $stmt = $db->prepare("
                 SELECT COALESCE(MAX(display_order), 0) + 1 as next_order
-                FROM images
+                FROM vizzy_images
                 WHERE project_id = :project_id
             ");
             $stmt->execute(['project_id' => $projectId]);
@@ -100,8 +100,8 @@ function handleUpload($db) {
 
             // Insert into database
             $stmt = $db->prepare("
-                INSERT INTO images (project_id, filename, file_path, file_size, mime_type, display_order)
-                VALUES (:project_id, :filename, :file_path, :file_size, :mime_type, :display_order)
+                INSERT INTO vizzy_images (project_id, filename, file_path, file_size, mime_type, display_order, upload_date)
+                VALUES (:project_id, :filename, :file_path, :file_size, :mime_type, :display_order, NOW())
             ");
 
             $relativeFilePath = UPLOAD_URL . $projectId . '/' . $uniqueFilename;
@@ -118,7 +118,7 @@ function handleUpload($db) {
             $imageId = $db->lastInsertId();
 
             // Fetch the created image record
-            $stmt = $db->prepare("SELECT * FROM images WHERE id = :id");
+            $stmt = $db->prepare("SELECT * FROM vizzy_images WHERE id = :id");
             $stmt->execute(['id' => $imageId]);
             $image = $stmt->fetch();
 

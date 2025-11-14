@@ -1,8 +1,9 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, HardDrive } from 'lucide-react';
 import ProjectList from './ProjectList';
+import { formatBytes } from '../utils/api';
 
-const Sidebar = ({ projects, activeProjectId, isCollapsed, onToggleCollapse, onSelectProject, onCreateProject, onRenameProject, onDeleteProject, onReorderProjects }) => {
+const Sidebar = ({ projects, activeProjectId, isCollapsed, onToggleCollapse, onSelectProject, onCreateProject, onRenameProject, onDeleteProject, onReorderProjects, storageUsed, storageLimit }) => {
 
   const handleCreateProject = () => {
     // Generate a default name for the new project
@@ -55,6 +56,33 @@ const Sidebar = ({ projects, activeProjectId, isCollapsed, onToggleCollapse, onS
               onDeleteProject={onDeleteProject}
               onReorderProjects={onReorderProjects}
             />
+          </div>
+
+          <div className="sidebar-footer">
+            <div className="storage-info">
+              <div className="storage-info-header">
+                <HardDrive size={16} />
+                <span className="storage-info-title">Storage Used</span>
+              </div>
+              <div className="storage-info-bar">
+                <div
+                  className="storage-info-bar-fill"
+                  style={{
+                    width: `${Math.min((storageUsed / storageLimit) * 100, 100)}%`,
+                    backgroundColor:
+                      (storageUsed / storageLimit) >= 0.9 ? '#ef4444' :
+                      (storageUsed / storageLimit) >= 0.75 ? '#f59e0b' :
+                      '#10b981'
+                  }}
+                />
+              </div>
+              <div className="storage-info-text">
+                {formatBytes(storageUsed)} / {formatBytes(storageLimit)}
+              </div>
+              <div className="storage-info-percent">
+                {Math.round((storageUsed / storageLimit) * 100)}% used
+              </div>
+            </div>
           </div>
         </>
       )}

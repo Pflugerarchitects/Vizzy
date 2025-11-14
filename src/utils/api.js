@@ -31,6 +31,7 @@ async function apiFetch(endpoint, options = {}) {
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('API Error Response:', data);
       throw new Error(data.error || `HTTP error! status: ${response.status}`);
     }
 
@@ -126,7 +127,7 @@ export const imagesAPI = {
     const formData = new FormData();
     formData.append('project_id', projectId);
 
-    // Add all files
+    // Add all files - use array notation for multiple files
     for (const file of files) {
       formData.append('files[]', file);
     }
@@ -144,6 +145,22 @@ export const imagesAPI = {
 };
 
 /**
+ * Storage API
+ */
+export const storageAPI = {
+  /**
+   * Get total storage usage
+   */
+  async getUsage() {
+    const data = await apiFetch('storage.php');
+    return {
+      totalBytes: data.total_bytes || 0,
+      totalImages: data.total_images || 0,
+    };
+  },
+};
+
+/**
  * Get full image URL
  */
 export function getImageUrl(imagePath) {
@@ -152,7 +169,20 @@ export function getImageUrl(imagePath) {
     return imagePath;
   }
 
-  // Otherwise, construct full URL
-  const baseUrl = API_BASE_URL.replace('/backend/api', '');
+  // Otherwise, construct full URL by removing /api from the end
+  const baseUrl = API_BASE_URL.replace(/\/api$/, '');
   return `${baseUrl}${imagePath}`;
+}
+
+/**
+ * Format bytes to human-readable format
+ */
+export function formatBytes(bytes) {
+  if (bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }

@@ -6,28 +6,18 @@ import { getImageUrl } from '../utils/api';
 const ImageGallery = ({ images, onDeleteImage }) => {
   const imageWindowRef = useRef(null);
 
-  const handleDownload = async (e, image) => {
+  const handleDownload = (e, image) => {
     e.stopPropagation();
     const imageUrl = getImageUrl(image.file_path);
 
-    try {
-      // Fetch the image
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = image.filename || 'image.jpg';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download failed:', error);
-      alert('Failed to download image. Please try again.');
-    }
+    // Create download link and trigger it
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = image.filename || 'image.jpg';
+    link.target = '_blank'; // Open in new tab if download fails
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleDelete = (e, imageId) => {

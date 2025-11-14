@@ -91,6 +91,14 @@
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   margin-top: 2px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.project-item-size {
+  font-weight: 500;
 }
 
 .project-item.active .project-item-count {

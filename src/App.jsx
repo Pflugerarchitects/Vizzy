@@ -4,18 +4,33 @@ import ImageUpload from './components/ImageUpload';
 import ImageGallery from './components/ImageGallery';
 import ThemeToggle from './components/ThemeToggle';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
-import { projectsAPI, imagesAPI } from './utils/api';
+import Login from './components/Login';
+import { useAuth } from './context/AuthContext';
+import { projectsAPI, imagesAPI, storageAPI } from './utils/api';
 
 function App() {
+  const { isAuthenticated, login, logout } = useAuth();
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projectToDelete, setProjectToDelete] = useState(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [storageUsed, setStorageUsed] = useState(0);
+  const STORAGE_LIMIT = 10 * 1024 * 1024 * 1024; // 10 GB in bytes
 
-  // Load projects from API on mount
+  // Load projects and storage from API on mount
   useEffect(() => {
     loadProjectsFromAPI();
+    loadStorageUsage();
   }, []);
+
+  const loadStorageUsage = async () => {
+    try {
+      const usage = await storageAPI.getUsage();
+      setStorageUsed(usage.totalBytes);
+    } catch (error) {
+      console.error('Failed to load storage usage:', error);
+    }
+  };
 
   // Load active project images when active project changes
   useEffect(() => {
@@ -145,9 +160,10 @@ function App() {
 
   const handleImagesAdded = (newImages) => {
     // Images are added via the ImageUpload component
-    // Just refresh the project images
+    // Just refresh the project images and storage
     if (activeProjectId) {
       loadProjectImages(activeProjectId);
+      loadStorageUsage();
     }
   };
 
@@ -163,6 +179,9 @@ function App() {
             : project
         )
       );
+
+      // Refresh storage usage
+      loadStorageUsage();
     } catch (error) {
       console.error('Failed to delete image:', error);
       alert('Failed to delete image. Please try again.');
@@ -186,6 +205,11 @@ function App() {
 
   const activeProject = projects.find(p => p.id === activeProjectId);
 
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <Login onLogin={login} />;
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -194,7 +218,32 @@ function App() {
             <h1 className="app-title">Vizzy</h1>
             <p className="app-subtitle">Upload and view your architecture visualization images</p>
           </div>
-          <ThemeToggle />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button
+              onClick={logout}
+              style={{
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+                color: '#6b7280',
+                background: 'transparent',
+                border: '1px solid rgba(107, 114, 128, 0.3)',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#1f2937';
+                e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = '#6b7280';
+                e.currentTarget.style.borderColor = 'rgba(107, 114, 128, 0.3)';
+              }}
+            >
+              Logout
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -203,6 +252,8 @@ function App() {
           projects={projects}
           activeProjectId={activeProjectId}
           isCollapsed={isSidebarCollapsed}
+          storageUsed={storageUsed}
+          storageLimit={STORAGE_LIMIT}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           onSelectProject={handleSelectProject}
           onCreateProject={handleCreateProject}
@@ -217,7 +268,7 @@ function App() {
               <div className="app-project-header">
                 <h2 className="app-project-name">{activeProject.name}</h2>
                 <p className="app-project-info">
-                  {activeProject.images.length} {activeProject.images.length === 1 ? 'image' : 'images'}
+                  {(activeProject.images || []).length} {(activeProject.images || []).length === 1 ? 'image' : 'images'}
                 </p>
               </div>
 
@@ -232,11 +283,11 @@ function App() {
               <section className="app-section">
                 <div className="app-section-header">
                   <h3 className="app-section-title">Gallery</h3>
-                  {activeProject.images.length > 0 && (
+                  {(activeProject.images || []).length > 0 && (
                     <p className="app-section-hint">Click any image to open in a new window</p>
                   )}
                 </div>
-                <ImageGallery images={activeProject.images} onDeleteImage={handleDeleteImage} />
+                <ImageGallery images={activeProject.images || []} onDeleteImage={handleDeleteImage} />
               </section>
             </>
           ) : (

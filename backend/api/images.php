@@ -42,7 +42,7 @@ function handleGetImages($db) {
 
     $stmt = $db->prepare("
         SELECT *
-        FROM images
+        FROM vizzy_images
         WHERE project_id = :project_id
         ORDER BY display_order ASC, upload_date DESC
     ");
@@ -65,7 +65,7 @@ function handleDeleteImage($db) {
     $imageId = (int)$data['id'];
 
     // Get image info before deleting
-    $stmt = $db->prepare("SELECT file_path FROM images WHERE id = :id");
+    $stmt = $db->prepare("SELECT file_path FROM vizzy_images WHERE id = :id");
     $stmt->execute(['id' => $imageId]);
     $image = $stmt->fetch();
 
@@ -78,7 +78,7 @@ function handleDeleteImage($db) {
 
     try {
         // Delete from database
-        $stmt = $db->prepare("DELETE FROM images WHERE id = :id");
+        $stmt = $db->prepare("DELETE FROM vizzy_images WHERE id = :id");
         $stmt->execute(['id' => $imageId]);
 
         // Delete file from filesystem
