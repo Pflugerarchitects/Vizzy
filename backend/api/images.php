@@ -18,6 +18,10 @@ try {
             handleGetImages($db);
             break;
 
+        case 'PUT':
+            handleUpdateImage($db);
+            break;
+
         case 'DELETE':
             handleDeleteImage($db);
             break;
@@ -50,6 +54,57 @@ function handleGetImages($db) {
     $images = $stmt->fetchAll();
 
     sendJSON(['images' => $images]);
+}
+
+/**
+ * PUT - Update an image (reorder)
+ */
+function handleUpdateImage($db) {
+    $data = getRequestBody();
+
+    if (!isset($data['id'])) {
+        sendError('Image ID is required');
+    }
+
+    $imageId = (int)$data['id'];
+
+    // Check if image exists
+    $stmt = $db->prepare("SELECT id, display_order FROM vizzy_images WHERE id = :id");
+    $stmt->execute(['id' => $imageId]);
+    $existing = $stmt->fetch();
+
+    if (!$existing) {
+        sendError('Image not found', 404);
+    }
+
+    // Build update query dynamically based on provided fields
+    $updates = [];
+    $params = ['id' => $imageId];
+
+    if (isset($data['display_order'])) {
+        $updates[] = "display_order = :display_order";
+        $params['display_order'] = (int)$data['display_order'];
+
+        // Log the update
+        error_log("Updating image ID {$imageId}: display_order {$existing['display_order']} → {$params['display_order']}");
+    }
+
+    if (empty($updates)) {
+        sendError('No fields to update');
+    }
+
+    $sql = "UPDATE vizzy_images SET " . implode(', ', $updates) . " WHERE id = :id";
+    $stmt = $db->prepare($sql);
+    $success = $stmt->execute($params);
+
+    error_log("Update executed for image ID {$imageId}, success: " . ($success ? 'YES' : 'NO') . ", rows affected: " . $stmt->rowCount());
+
+    // Fetch updated image
+    $stmt = $db->prepare("SELECT * FROM vizzy_images WHERE id = :id");
+    $stmt->execute(['id' => $imageId]);
+    $image = $stmt->fetch();
+
+    sendJSON(['image' => $image]);
 }
 
 /**

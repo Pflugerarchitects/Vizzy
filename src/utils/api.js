@@ -111,6 +111,17 @@ export const imagesAPI = {
   },
 
   /**
+   * Update an image
+   */
+  async update(id, updates) {
+    const data = await apiFetch('images.php', {
+      method: 'PUT',
+      body: JSON.stringify({ id, ...updates }),
+    });
+    return data.image;
+  },
+
+  /**
    * Delete an image
    */
   async delete(imageId) {
@@ -141,6 +152,23 @@ export const imagesAPI = {
       images: data.images || [],
       errors: data.errors || [],
     };
+  },
+
+  /**
+   * Reorder images
+   */
+  async reorder(imagesArray) {
+    console.log(`📤 Reordering ${imagesArray.length} images...`);
+
+    // Update display_order for each image individually
+    const promises = imagesArray.map((image, index) => {
+      console.log(`  - Image ID ${image.id} → display_order: ${index}`);
+      return this.update(image.id, { display_order: index });
+    });
+
+    const results = await Promise.all(promises);
+    console.log('📥 All updates completed:', results.length);
+    return results;
   },
 };
 

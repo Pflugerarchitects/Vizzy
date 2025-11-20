@@ -6,6 +6,47 @@
   will-change: contents;
 }
 
+.image-gallery.dragging-active {
+  cursor: grabbing;
+}
+
+.image-gallery.dragging-active .image-gallery-item {
+  cursor: grab;
+}
+
+.image-gallery.saving {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Saving Indicator */
+.image-gallery-saving-indicator {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+}
+
+.saving-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
 @media (min-width: 768px) {
   .image-gallery {
     grid-template-columns: repeat(3, 1fr);
@@ -19,6 +60,10 @@
 }
 
 .image-gallery-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 200px);
   text-align: center;
   padding: var(--spacing-2xl) var(--spacing-md);
   color: var(--text-secondary);
@@ -32,10 +77,26 @@
   border-radius: var(--radius-md);
   border: 1px solid var(--border-default);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1),
+              border-color 0.2s ease,
+              box-shadow 0.2s ease,
+              opacity 0.15s ease;
   transform: translateZ(0);
   backface-visibility: hidden;
   contain: layout style paint;
+}
+
+.image-gallery-item.dragging {
+  opacity: 0.5;
+  transform: scale(0.98) translateZ(0);
+  cursor: grabbing;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.image-gallery-item.drag-over {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3), var(--shadow-md);
+  transform: scale(1.03) translateZ(0);
 }
 
 .image-gallery-item:hover {

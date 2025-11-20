@@ -212,6 +212,27 @@ function App() {
     }
   };
 
+  const handleReorderImages = async (reorderedImages) => {
+    // Optimistically update UI
+    setProjects(prev =>
+      prev.map(project =>
+        project.id === activeProjectId
+          ? { ...project, images: reorderedImages }
+          : project
+      )
+    );
+
+    try {
+      // Send reorder request to API
+      await imagesAPI.reorder(reorderedImages);
+    } catch (error) {
+      console.error('Failed to reorder images:', error);
+      alert('Failed to save image order. Please refresh.');
+      // Reload images to restore correct order
+      loadProjectImages(activeProjectId);
+    }
+  };
+
   const handleReorderProjects = async (reorderedProjects) => {
     // Optimistically update UI
     setProjects(reorderedProjects);
@@ -235,18 +256,18 @@ function App() {
   }
 
   return (
-    <div className="app">
+    <div className={`app ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <header className="app-header">
         <div className="app-header-content">
-          <div style={{ flex: '1' }}>
+          <div className="app-header-left">
             <h1 className="app-title">Vizzy</h1>
           </div>
-          <div style={{ flex: '1', display: 'flex', justifyContent: 'center' }}>
+          <div className="app-header-center">
             {activeProject && (
               <h2 className="app-project-name-header">{getDisplayName(activeProject.name)}</h2>
             )}
           </div>
-          <div style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem' }}>
+          <div className="app-header-right">
             {activeProject && (
               <ImageUpload
                 projectId={activeProjectId}
@@ -286,7 +307,11 @@ function App() {
         <main className="app-main">
           {activeProject ? (
             <section className="app-section">
-              <ImageGallery images={activeProject.images || []} onDeleteImage={handleDeleteImage} />
+              <ImageGallery
+                images={activeProject.images || []}
+                onDeleteImage={handleDeleteImage}
+                onReorderImages={handleReorderImages}
+              />
             </section>
           ) : (
             <div className="app-empty">
