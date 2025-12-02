@@ -104,6 +104,31 @@ function handleUpdateImage($db) {
         error_log("Updating image ID {$imageId}: phase → " . ($phase ?? 'NULL'));
     }
 
+    // Handle is_hero update
+    if (array_key_exists('is_hero', $data)) {
+        $isHero = $data['is_hero'] ? 1 : 0;
+
+        // If setting as hero, first clear any existing hero for this project
+        if ($isHero) {
+            // Get the project_id for this image
+            $stmt = $db->prepare("SELECT project_id FROM vizzy_images WHERE id = :id");
+            $stmt->execute(['id' => $imageId]);
+            $imageInfo = $stmt->fetch();
+
+            if ($imageInfo) {
+                // Clear existing hero for this project
+                $stmt = $db->prepare("UPDATE vizzy_images SET is_hero = 0 WHERE project_id = :project_id AND is_hero = 1");
+                $stmt->execute(['project_id' => $imageInfo['project_id']]);
+                error_log("Cleared existing hero for project ID {$imageInfo['project_id']}");
+            }
+        }
+
+        $updates[] = "is_hero = :is_hero";
+        $params['is_hero'] = $isHero;
+
+        error_log("Updating image ID {$imageId}: is_hero → {$isHero}");
+    }
+
     if (empty($updates)) {
         sendError('No fields to update');
     }

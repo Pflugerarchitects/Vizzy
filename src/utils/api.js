@@ -169,6 +169,18 @@ export const imagesAPI = {
     console.log('📥 Batch reorder completed:', data.updated, 'of', data.total, 'images');
     return data;
   },
+
+  /**
+   * Set an image as the hero image for its project
+   * This will automatically clear any existing hero for the same project
+   */
+  async setHero(imageId) {
+    const data = await apiFetch('images.php', {
+      method: 'PUT',
+      body: JSON.stringify({ id: imageId, is_hero: true }),
+    });
+    return data.image;
+  },
 };
 
 /**

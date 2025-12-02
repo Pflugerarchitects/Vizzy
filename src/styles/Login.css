@@ -1,0 +1,190 @@
+/* Login Page Styles - Apple-inspired minimalist design */
+
+.login-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100%;
+  padding: var(--spacing-xl);
+  background-color: var(--bg-primary);
+}
+
+/* Hero Section */
+.login-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.login-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  font-size: 72px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text-primary);
+  margin: 0;
+  text-align: center;
+}
+
+.login-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Login Card */
+.login-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Input Group */
+.login-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-icon {
+  position: absolute;
+  left: var(--spacing-md);
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.login-input {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  padding-left: calc(var(--spacing-lg) + 24px);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: var(--accent-blue);
+  background-color: var(--bg-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.login-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Error Message */
+.login-error {
+  color: #ef4444;
+  text-align: center;
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-sm);
+  background-color: rgba(239, 68, 68, 0.1);
+  border-radius: var(--radius-md);
+}
+
+/* Login Button */
+.login-button {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-top: var(--spacing-md);
+  background-color: var(--accent-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.login-button:hover {
+  background-color: var(--accent-blue-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+/* ===== Login to Home Transition Animations ===== */
+
+/* Page transitioning state */
+.login-page.transitioning {
+  pointer-events: none;
+}
+
+/* Title morph animation - moves up slightly and pulses */
+.login-title.title-morph {
+  animation: titleMorph 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes titleMorph {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.05) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateY(-20px);
+    opacity: 1;
+  }
+}
+
+/* Card exit animation - fades out and slides down */
+.login-card.card-exit {
+  animation: cardExit 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes cardExit {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
+}
+
+/* Hero section during transition */
+.login-page.transitioning .login-hero {
+  animation: heroFloat 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes heroFloat {
+  0% {
+    margin-bottom: var(--spacing-2xl);
+  }
+  100% {
+    margin-bottom: var(--spacing-lg);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .login-title {
+    font-size: 48px;
+  }
+
+  .login-card {
+    max-width: 100%;
+  }
+}

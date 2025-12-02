@@ -1,9 +1,10 @@
 import React, { useRef, memo, useState, useEffect } from 'react';
-import { Trash2, Download, Tag } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Trash2, Download, Tag, Star } from 'lucide-react';
 import LazyImage from './LazyImage';
 import { getImageUrl, imagesAPI } from '../utils/api';
 
-const ImageGallery = memo(({ images, onDeleteImage, onReorderImages }) => {
+const ImageGallery = memo(({ images, onDeleteImage, onReorderImages, onSetHero }) => {
   const imageWindowRef = useRef(null);
   const originalOrderRef = useRef(null);
   const pointerStartRef = useRef(null);
@@ -63,6 +64,13 @@ const ImageGallery = memo(({ images, onDeleteImage, onReorderImages }) => {
   const handleDelete = (e, imageId) => {
     e.stopPropagation();
     onDeleteImage(imageId);
+  };
+
+  const handleSetHero = (e, imageId) => {
+    e.stopPropagation();
+    if (onSetHero) {
+      onSetHero(imageId);
+    }
   };
 
   // Drag and drop handlers
@@ -260,10 +268,10 @@ const ImageGallery = memo(({ images, onDeleteImage, onReorderImages }) => {
         </div>
       )}
       <div className={`image-gallery ${draggedItemId ? 'dragging-active' : ''} ${isSaving ? 'saving' : ''}`}>
-        {filteredImages.map((image) => {
+        {filteredImages.map((image, index) => {
         const imageUrl = getImageUrl(image.file_path);
         return (
-          <div
+          <motion.div
             key={image.id}
             className={`image-gallery-item ${draggedItemId === image.id || touchDragId === image.id ? 'dragging' : ''} ${draggedOverItemId === image.id ? 'drag-over' : ''}`}
             onClick={() => handleImageClick(imageUrl)}
@@ -277,8 +285,24 @@ const ImageGallery = memo(({ images, onDeleteImage, onReorderImages }) => {
             onPointerMove={(e) => handlePointerMove(e, image.id)}
             onPointerUp={handlePointerUp}
             style={{ touchAction: 'none' }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.4,
+              delay: index * 0.05,
+              ease: [0.4, 0, 0.2, 1]
+            }}
+            whileHover={{ scale: 1.02 }}
           >
             <div className="image-gallery-item-actions">
+              <button
+                className={`image-gallery-item-action image-gallery-item-hero ${image.is_hero ? 'active' : ''}`}
+                onClick={(e) => handleSetHero(e, image.id)}
+                aria-label={image.is_hero ? 'Hero image' : 'Set as hero image'}
+                title={image.is_hero ? 'Hero image' : 'Set as hero'}
+              >
+                <Star size={18} fill={image.is_hero ? 'currentColor' : 'none'} />
+              </button>
               <button
                 className="image-gallery-item-action"
                 onClick={(e) => handleDownload(e, image)}
@@ -296,6 +320,12 @@ const ImageGallery = memo(({ images, onDeleteImage, onReorderImages }) => {
                 <Trash2 size={18} />
               </button>
             </div>
+            {image.is_hero ? (
+              <div className="image-hero-badge">
+                <Star size={14} fill="currentColor" />
+                Hero
+              </div>
+            ) : null}
             {image.phase && (
               <div className={`image-phase-badge phase-${image.phase.toLowerCase()}`}>
                 {image.phase}
@@ -315,12 +345,13 @@ const ImageGallery = memo(({ images, onDeleteImage, onReorderImages }) => {
                   <option value="">Unassigned</option>
                   <option value="SD">SD</option>
                   <option value="DD">DD</option>
-                  <option value="Final">Final</option>
+                  <option value="CD">CD</option>
                   <option value="Approved">Approved</option>
+                  <option value="Final">Final</option>
                 </select>
               </div>
             </div>
-          </div>
+          </motion.div>
         );
       })}
       </div>

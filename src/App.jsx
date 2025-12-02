@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Upload } from 'lucide-react';
-import Sidebar from './components/Sidebar';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, Upload, Plus } from 'lucide-react';
+import HomePage from './components/HomePage';
+import ProjectPage from './components/ProjectPage';
 import ImageUpload from './components/ImageUpload';
-import ImageGallery from './components/ImageGallery';
 import ThemeToggle from './components/ThemeToggle';
 import DeleteConfirmationModal from './components/DeleteConfirmationModal';
 import CitySelectionModal from './components/CitySelectionModal';
@@ -16,7 +17,7 @@ function App() {
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [projectToDelete, setProjectToDelete] = useState(null);
   const [showCityModal, setShowCityModal] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [currentView, setCurrentView] = useState('home'); // 'home' | 'project'
   const [storageUsed, setStorageUsed] = useState(0);
   const STORAGE_LIMIT = 10 * 1024 * 1024 * 1024; // 10 GB in bytes
 
@@ -74,14 +75,6 @@ function App() {
     try {
       const projectsData = await projectsAPI.getAll();
       setProjects(projectsData);
-
-      // Restore active project from localStorage or use first project
-      const savedActiveId = localStorage.getItem('activeProjectId');
-      const validActiveId = savedActiveId && projectsData.find(p => p.id == savedActiveId)
-        ? savedActiveId
-        : (projectsData[0]?.id || null);
-
-      setActiveProjectId(validActiveId);
     } catch (error) {
       console.error('Failed to load projects:', error);
       alert('Failed to load projects. Please check your connection.');
@@ -105,6 +98,18 @@ function App() {
     }
   };
 
+  // Navigation functions
+  const navigateToProject = (projectId) => {
+    setActiveProjectId(projectId);
+    setCurrentView('project');
+  };
+
+  const navigateToHome = () => {
+    setCurrentView('home');
+    // Reload projects to get updated hero images
+    loadProjectsFromAPI();
+  };
+
   const handleShowCreateModal = () => {
     setShowCityModal(true);
   };
@@ -116,6 +121,7 @@ function App() {
       const newProject = await projectsAPI.create(fullProjectName);
       setProjects(prev => [...prev, { ...newProject, images: [] }]);
       setActiveProjectId(newProject.id);
+      setCurrentView('project');
       setShowCityModal(false);
     } catch (error) {
       console.error('Failed to create project:', error);
@@ -125,37 +131,6 @@ function App() {
 
   const handleCancelCreateProject = () => {
     setShowCityModal(false);
-  };
-
-  const handleSelectProject = (projectId) => {
-    setActiveProjectId(projectId);
-  };
-
-  const handleRenameProject = async (projectId, newName) => {
-    // Trim and validate the new name
-    const trimmedName = newName.trim();
-    if (!trimmedName) {
-      alert('Project name cannot be empty.');
-      return false;
-    }
-
-    try {
-      await projectsAPI.update(projectId, { name: trimmedName });
-
-      // Update the project name in state
-      setProjects(prev =>
-        prev.map(project =>
-          project.id === projectId
-            ? { ...project, name: trimmedName }
-            : project
-        )
-      );
-      return true;
-    } catch (error) {
-      console.error('Failed to rename project:', error);
-      alert('Failed to rename project. Please try again.');
-      return false;
-    }
   };
 
   const handleDeleteProject = (projectId) => {
@@ -179,10 +154,10 @@ function App() {
       // Remove the project from state
       setProjects(prev => prev.filter(p => p.id !== projectToDelete.id));
 
-      // If deleting the active project, switch to another project
+      // If deleting the active project, go back to home
       if (activeProjectId === projectToDelete.id) {
-        const remainingProjects = projects.filter(p => p.id !== projectToDelete.id);
-        setActiveProjectId(remainingProjects[0].id);
+        setCurrentView('home');
+        setActiveProjectId(null);
       }
 
       // Close the modal
@@ -249,48 +224,85 @@ function App() {
     }
   };
 
-  const handleReorderProjects = async (reorderedProjects) => {
-    // Optimistically update UI
-    setProjects(reorderedProjects);
-
+  const handleSetHeroImage = async (imageId) => {
     try {
-      // Send reorder request to API
-      await projectsAPI.reorder(reorderedProjects);
+      await imagesAPI.setHero(imageId);
+
+      // Update local state to reflect the new hero
+      setProjects(prev =>
+        prev.map(project =>
+          project.id === activeProjectId
+            ? {
+                ...project,
+                images: project.images.map(img => ({
+                  ...img,
+                  is_hero: img.id === imageId ? 1 : 0
+                }))
+              }
+            : project
+        )
+      );
     } catch (error) {
-      console.error('Failed to reorder projects:', error);
-      alert('Failed to save project order. Please refresh.');
-      // Reload projects to restore correct order
-      loadProjectsFromAPI();
+      console.error('Failed to set hero image:', error);
+      alert('Failed to set hero image. Please try again.');
     }
   };
 
   const activeProject = projects.find(p => p.id === activeProjectId);
 
-  // Show login screen if not authenticated
-  if (!isAuthenticated) {
-    return <Login onLogin={login} />;
-  }
-
   return (
-    <div className={`app ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <header className="app-header">
+    <AnimatePresence mode="wait">
+      {!isAuthenticated ? (
+        <Login key="login" onLogin={login} />
+      ) : (
+        <motion.div
+          key="app"
+          className="app"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
+          <motion.header
+            className="app-header"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.4, 0, 0.2, 1] }}
+          >
         <div className="app-header-content">
           <div className="app-header-left">
-            <h1 className="app-title">Vizzy</h1>
-          </div>
-          <div className="app-header-center">
-            {activeProject && (
-              <h2 className="app-project-name-header">{getFullDisplayName(activeProject.name)}</h2>
+            {currentView === 'project' ? (
+              <button
+                onClick={navigateToHome}
+                className="header-vizzy-button"
+                aria-label="Back to Home"
+                title="Back to Home"
+              >
+                Vizzy
+              </button>
+            ) : (
+              <button
+                onClick={handleShowCreateModal}
+                className="header-action-button"
+                aria-label="New Project"
+                title="New Project"
+              >
+                <Plus size={20} />
+                <span>New Project</span>
+              </button>
             )}
           </div>
+          <div className="app-header-center">
+            {/* Project name now displayed in ProjectPage hero section */}
+          </div>
           <div className="app-header-right">
-            {activeProject && (
+            {currentView === 'project' && activeProject && (
               <ImageUpload
                 projectId={activeProjectId}
                 onImagesAdded={handleImagesAdded}
                 compact={true}
               />
             )}
+            <ThemeToggle />
             <button
               onClick={logout}
               className="header-icon-button"
@@ -299,58 +311,71 @@ function App() {
             >
               <LogOut size={20} />
             </button>
-            <ThemeToggle />
           </div>
-        </div>
-      </header>
+          </div>
+          </motion.header>
 
-      <div className={`app-body ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        <Sidebar
-          projects={projects}
-          activeProjectId={activeProjectId}
-          isCollapsed={isSidebarCollapsed}
-          storageUsed={storageUsed}
-          storageLimit={STORAGE_LIMIT}
-          getDisplayName={getFullDisplayName}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          onSelectProject={handleSelectProject}
-          onCreateProject={handleShowCreateModal}
-          onRenameProject={handleRenameProject}
-          onDeleteProject={handleDeleteProject}
-          onReorderProjects={handleReorderProjects}
-        />
+          <motion.div
+            className="app-body"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <AnimatePresence mode="wait">
+              {currentView === 'home' ? (
+                <motion.div
+                  key="home"
+                  initial={{ opacity: 0, x: -30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  className="page-transition-wrapper"
+                >
+                  <HomePage
+                    projects={projects}
+                    getDisplayName={getFullDisplayName}
+                    onSelectProject={navigateToProject}
+                    onDeleteProject={handleDeleteProject}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="project"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 30 }}
+                  transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                  className="page-transition-wrapper"
+                >
+                  <ProjectPage
+                    project={activeProject}
+                    projectDisplayName={activeProject ? getFullDisplayName(activeProject.name) : ''}
+                    onDeleteImage={handleDeleteImage}
+                    onReorderImages={handleReorderImages}
+                    onSetHero={handleSetHeroImage}
+                    onImagesAdded={handleImagesAdded}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
 
-        <main className="app-main">
-          {activeProject ? (
-            <section className="app-section">
-              <ImageGallery
-                images={activeProject.images || []}
-                onDeleteImage={handleDeleteImage}
-                onReorderImages={handleReorderImages}
-              />
-            </section>
-          ) : (
-            <div className="app-empty">
-              <p>No project selected. Create a new project to get started.</p>
-            </div>
+          {projectToDelete && (
+            <DeleteConfirmationModal
+              onConfirm={confirmDeleteProject}
+              onCancel={cancelDeleteProject}
+            />
           )}
-        </main>
-      </div>
 
-      {projectToDelete && (
-        <DeleteConfirmationModal
-          onConfirm={confirmDeleteProject}
-          onCancel={cancelDeleteProject}
-        />
+          {showCityModal && (
+            <CitySelectionModal
+              onSelectCity={handleCreateProject}
+              onCancel={handleCancelCreateProject}
+            />
+          )}
+        </motion.div>
       )}
-
-      {showCityModal && (
-        <CitySelectionModal
-          onSelectCity={handleCreateProject}
-          onCancel={handleCancelCreateProject}
-        />
-      )}
-    </div>
+    </AnimatePresence>
   );
 }
 
