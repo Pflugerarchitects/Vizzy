@@ -180,6 +180,40 @@
   color: #ffffff;
 }
 
+.image-gallery-item-action.image-gallery-item-hero {
+  color: var(--text-secondary);
+}
+
+.image-gallery-item-action.image-gallery-item-hero:hover {
+  background-color: #fbbf24;
+  color: #78350f;
+}
+
+.image-gallery-item-action.image-gallery-item-hero.active {
+  background-color: #fbbf24;
+  color: #78350f;
+}
+
+/* Hero Badge */
+.image-hero-badge {
+  position: absolute;
+  top: var(--spacing-xs);
+  left: var(--spacing-xs);
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  z-index: 10;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #78350f;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* Lazy loading styles */
 .lazy-image-container {
   width: 100%;
@@ -321,7 +355,7 @@
   transform: scale(1.1);
 }
 
-/* Phase Badge */
+/* Phase Badge - positioned below hero badge if present */
 .image-phase-badge {
   position: absolute;
   top: var(--spacing-xs);
@@ -330,10 +364,15 @@
   font-size: var(--font-size-xs);
   font-weight: 600;
   border-radius: var(--radius-sm);
-  z-index: 10;
+  z-index: 9;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* When hero badge is present, move phase badge down */
+.image-hero-badge + .image-phase-badge {
+  top: calc(var(--spacing-xs) + 28px);
 }
 
 .phase-sd {

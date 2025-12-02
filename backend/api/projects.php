@@ -38,9 +38,10 @@ try {
 }
 
 /**
- * GET - Fetch all projects
+ * GET - Fetch all projects with hero image info
  */
 function handleGetProjects($db) {
+    // First get all projects with image counts
     $stmt = $db->prepare("
         SELECT p.*,
                COUNT(i.id) as image_count,
@@ -52,6 +53,21 @@ function handleGetProjects($db) {
     ");
     $stmt->execute();
     $projects = $stmt->fetchAll();
+
+    // For each project, get the hero image (or first image by display_order)
+    foreach ($projects as &$project) {
+        $stmt = $db->prepare("
+            SELECT file_path, is_hero
+            FROM vizzy_images
+            WHERE project_id = :project_id
+            ORDER BY is_hero DESC, display_order ASC
+            LIMIT 1
+        ");
+        $stmt->execute(['project_id' => $project['id']]);
+        $heroImage = $stmt->fetch();
+
+        $project['hero_image_path'] = $heroImage ? $heroImage['file_path'] : null;
+    }
 
     sendJSON(['projects' => $projects]);
 }
